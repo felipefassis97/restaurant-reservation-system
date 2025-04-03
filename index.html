@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Reservas de Restaurante</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f0f2f5;
+      padding: 40px;
+      max-width: 900px;
+      margin: auto;
+    }
+    h1, h2 {
+      text-align: center;
+      color: #333;
+    }
+    .container {
+      display: grid;
+      gap: 20px;
+    }
+    form, .reservas, .mesas {
+      background: #fff;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+    input, button {
+      width: 100%;
+      padding: 12px;
+      margin-top: 10px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+    button {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    .reserva, .mesa {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid #ddd;
+    }
+    .reserva:last-child, .mesa:last-child {
+      border-bottom: none;
+    }
+    .actions button {
+      background-color: #dc3545;
+      margin-left: 10px;
+    }
+    .actions button:hover {
+      background-color: #a71d2a;
+    }
+  </style>
+</head>
+<body>
+  <h1>Sistema de Reservas</h1>
+  <div class="container">
+    <form id="reserva-form">
+      <h2>Nova Reserva</h2>
+      <input type="text" id="nome" placeholder="Nome" required />
+      <input type="number" id="pessoas" placeholder="Número de Pessoas" required />
+      <button type="submit">Reservar</button>
+    </form>
+
+    <div class="mesas">
+      <h2>Mesas Disponíveis</h2>
+      <div id="lista-mesas"></div>
+    </div>
+
+    <div class="reservas">
+      <h2>Reservas</h2>
+      <div id="lista-reservas"></div>
+    </div>
+  </div>
+
+  <script>
+    const API = 'http://localhost:9292';
+    const form = document.getElementById('reserva-form');
+    const lista = document.getElementById('lista-reservas');
+    const mesasDiv = document.getElementById('lista-mesas');
+
+    async function carregarReservas() {
+      const res = await fetch(`${API}/reservas`);
+      const data = await res.json();
+      lista.innerHTML = '';
+      data.forEach(r => {
+        const div = document.createElement('div');
+        div.classList.add('reserva');
+        div.innerHTML = `
+          <div><strong>${r.nome}</strong> - ${r.pessoas} pessoas - Mesas: ${r.mesas}</div>
+          <div class="actions">
+            <button onclick="deletarReserva(${r.id})">Cancelar</button>
+          </div>
+        `;
+        lista.appendChild(div);
+      });
+    }
+
+    async function carregarMesasDisponiveis(pessoas = 1) {
+      const res = await fetch(`${API}/mesas/disponiveis?pessoas=${pessoas}`);
+      const data = await res.json();
+      mesasDiv.innerHTML = '';
+      data.forEach(m => {
+        const div = document.createElement('div');
+        div.classList.add('mesa');
+        div.textContent = `Mesa ${m.id} - Capacidade: ${m.capacidade}`;
+        mesasDiv.appendChild(div);
+      });
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const nome = document.getElementById('nome').value;
+      const pessoas = parseInt(document.getElementById('pessoas').value);
+      await fetch(`${API}/reservas`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nome, pessoas })
+      });
+      form.reset();
+      carregarReservas();
+      carregarMesasDisponiveis();
+    });
+
+    async function deletarReserva(id) {
+      await fetch(`${API}/reservas/${id}`, {
+        method: 'DELETE'
+      });
+      carregarReservas();
+    }
+
+    carregarReservas();
+    carregarMesasDisponiveis();
+  </script>
+</body>
+</html>
